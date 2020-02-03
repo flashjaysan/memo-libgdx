@@ -191,3 +191,9 @@ Le diagramme suivant illustre visuellement le cycle de vie :
 ### Où est la boucle principale ?
 
 LibGDX est basé sur les évènements par nature. Cela est principalement dû à la façon dont fonctionnent *Android* et *JavaScript*. Une boucle principale explicite n'existe pas. Cependant la méthode `ApplicationListener.render()` peut être considérée comme le corps d'une telle boucle.
+
+## Liens utiles
+
+La ressource la plus utile pour apprendre libGDX est le [wiki officiel](https://github.com/libgdx/libgdx/wiki).
+
+**Attention !** La [documentation officiel](https://libgdx.badlogicgames.com/documentation/) sur le site de badlogic est atrocement limitée. Utilisez le wiki !
