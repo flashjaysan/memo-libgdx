@@ -83,8 +83,7 @@ Run the superDev Gradle task as before. Go to http://localhost:8080/html, click 
 
 ## Exporter votre projet
 
-[A COMPLETER]
-It's easiest to package your application from the command line, or using the Gradle task within IntelliJ IDEA. To see the relevant Gradle tasks, check the Gradle command line documentation.
+[Documentation officielle](https://libgdx.badlogicgames.com/documentation/gettingstarted/Packaging.html) sur l'export vers les plateformes cibles.
 
 ## Structure de libGDX
 
@@ -196,4 +195,4 @@ LibGDX est basé sur les évènements par nature. Cela est principalement dû à
 
 La ressource la plus utile pour apprendre libGDX est le [wiki officiel](https://github.com/libgdx/libgdx/wiki).
 
-**Attention !** La [documentation officiel](https://libgdx.badlogicgames.com/documentation/) sur le site de badlogic est atrocement limitée. Utilisez le wiki !
+**Attention !** La [documentation officiel](https://libgdx.badlogicgames.com/documentation/) sur le site de badlogic est atrocement limitée pour apprendre à utiliser libGDX. Elle propose juste d'expliquer quels outils utiliser et comment les configurer pour démarrer. Elle contient également des informations pour exporter un projet sur les plateformes cibles. D'une manière générale, utilisez de préférence le wiki !
