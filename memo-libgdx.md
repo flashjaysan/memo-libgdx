@@ -2,16 +2,24 @@
 
 par *flashjaysan*
 
+## Prérequis
+
+Pour suivre ce mémo, vous aurez besoin :
+
+- D'une bonne connaissance du langage Java.
+- D'un JDK Java. Il est conseillé d'utiliser un JDK Java 8. Par exemple, installer [OpenJDK](https://adoptopenjdk.net/).
+- D'[Android Studio](https://developer.android.com/studio/).
+
 ## Créer un projet libGDX
 
-Les développeurs de libGDX fournissent un fichier *jar* exécutable permettant de paramétrer un projet utilisant libGDX.
+Si vous deviez créer vous-même un projet libGDX, vous devriez créer un projet pour le coeur du jeu et un projet pour chaque plateforme cible sur laquelle vous souhaiteriez déployer votre projet. Vous devriez ensuite configurer ces différents projets et les lier entre eux. Cela est compliqué et fastidieux. Heureusement, les développeurs de libGDX ont créé un fichier *jar* exécutable permettant de générer un projet utilisant libGDX et le configurer automatiquement pour les différentes plateformes cibles.
 
-- Télécharger le générateur de projet de libGDX (fichier `gdx-setup.jar`) sur le [site officiel de libGDX](https://libgdx.badlogicgames.com/download.html).
+- Téléchargez le générateur de projet de libGDX (fichier `gdx-setup.jar`) sur le [site officiel de libGDX](https://libgdx.badlogicgames.com/download.html).
 
 **Attention !** Java 13 n'est pas compatible avec ce générateur de projet. J'ai pu le faire fonctionner avec Java 11 mais on m'a conseillé d'installer et d'utiliser de préférence Java 8.
 
 - Exécutez le fichier `gdx-setup.jar`.
-- Dans le libGDX Project Setup, saisissez les informations nécessaires :
+- Dans le *libGDX Project Setup*, saisissez les informations nécessaires :
   - Le champ `Name` correspond au nom de votre jeu.
   - Le champ `Package` correspond au package du projet.
   - Le champ `Game Class` correspond au nom de la classe racine de votre jeu.
@@ -29,8 +37,8 @@ Les développeurs de libGDX fournissent un fichier *jar* exécutable permettant 
 
 ## Ouvrir un projet libGDX dans Android Studio
 
-- Sur l'écran d'accueil d'Android Studio, cliquez sur l'option `Import project (gradle, eclipse adt, etc.)`.
-- Sélectionnez le dossier contenant le projet libGDX.
+- Sur l'écran d'accueil d'Android Studio, cliquez sur l'option `Import project (gradle, eclipse adt, etc.)`. Si un projet est déjà ouvert, cliquez sur le menu `File -> New -> Import Project...`.
+- Sélectionnez le dossier contenant le projet libGDX puis cliquez sur le bouton `OK`.
 
 ## Exécuter un projet
 
@@ -49,6 +57,10 @@ Les développeurs de libGDX fournissent un fichier *jar* exécutable permettant 
 - Sélectionnez la classe `DesktopLauncher`.
 - Dans le champ `Working directory`, sélectionnez le dossier `android/assets/` ou `core/assets/` du projet.
 - Cliquez sur le bouton `Apply` puis sur le bouton `OK`.
+
+## Structure d'un projet libGDX
+
+Le code source spécifique à une plateforme se situe dans un dossier portant le nom de la plateforme. Par exemple dans les dossiers `desktop`, `android` ou `html`. Le code source du jeu en lui-même se situe dans un dossier appelé `core`. C'est dans ce dossier que vous placerez la plupart de votre code source.
 
 #### Exécuter le projet
 
@@ -85,9 +97,57 @@ Run the superDev Gradle task as before. Go to http://localhost:8080/html, click 
 
 [Documentation officielle](https://libgdx.badlogicgames.com/documentation/gettingstarted/Packaging.html) sur l'export vers les plateformes cibles.
 
-## Structure de libGDX
+## Cycle de vie d'un jeu avec libGDX
 
-### Modules
+Une application libGDX a un cycle de vie bien défini qui gouverne les états d'une application tels que la création, la pause, la reprise, le rendu et la destruction d'une application.
+
+### ApplicationListener
+
+Un développeur d'application exploite ces évènements du cycle de vie en implémentant l'interface `ApplicationListener` et en passant une instance de cette implémentation à l'implémentation concrète de l'interface `Application` d'une plateforme spécifique. De là, l'interface `Application` appellera l'`ApplicationListener` à chaque fois qu'un évènement de niveau application surviendra. Une implémentation basique d'`ApplicationListener` pourrait ressembler au code suivant :
+
+```java
+public class Game implements ApplicationListener {
+
+   @Override
+   public void create () {}
+
+   @Override
+   public void render () {}
+
+   @Override
+   public void resize (int width, int height) {}
+
+   @Override
+   public void pause () {}
+
+   @Override
+   public void resume () {}
+
+   @Override
+   public void dispose () {}
+}
+```
+
+**Remarque :** Vous pouvez également créer une classe dérivée de la classe `ApplicationAdapter` (qui implémente elle-même l'interface `ApplicationListener`) si toutes les méthodes de l'interface ne vous sont pas utiles.
+
+Une fois passée à l'`Application`, les méthodes de l'`ApplicationListener` seront appelées comme suit :
+
+- `create()` : Méthode appelée une seule fois lorsque l'application est créée. Utilisée pour l'initialisation et chargement des ressources du jeu.
+- `resize(int width, int height)` : Méthode appelée chaque fois que l'écran de jeu est redimensionné et que le jeu n'est pas dans un état de pause. Elle est également appelée une fois juste après la méthode `create()` lors de l'initialisation. Les paramètres correspondent à la nouvelle largeur et hauteur de l'écran de jeu redimensionné (en pixels).
+- `render()` : Méthode appelée par la boucle de jeu depuis l'application chaque fois qu'un rendu doit être exécuté. Les mises à jour de la logique de jeu et l'affichage sont généralement exécutées dans cette méthode.
+- `pause()` : Sur Android, cette méthode est appelée lorsque le bouton `Home` est appuyé ou si un appel est reçu. Sur ordinateur, elle est appelée juste avant la méthode `dispose()` lorsque le jeu se termine. Une bon endroit pour sauvegarder l'état du jeu.
+- `resume()` : Cette méthode est seulement appelée sur Android, lorsque l'application reprend après un état de pause.
+- `dispose()` : Méthode appelée lorsque l'application est détruite. Elle est précédée d'un appel à la méthode `pause()`.
+
+Le diagramme suivant illustre visuellement le cycle de vie :
+
+![diagramme du cycle de vie](libgdx_diagramme_cycle_de_vie.png)
+
+### Où est la boucle principale ?
+
+LibGDX est basé sur les évènements par nature. Cela est principalement dû à la façon dont fonctionnent *Android* et *JavaScript*. Une boucle principale explicite n'existe pas. Cependant la méthode `ApplicationListener.render()` peut être considérée comme le corps d'une telle boucle.
+
+## Modules
 
 libGDX est composé de six interfaces qui fournissent les fonctionnalités pour interagir avec le système de la plateforme cible. Chaque plateforme cible possède une implémentation spécifique de ces interfaces. 
 
@@ -108,7 +168,7 @@ Pour Windows et Mac OS cela peut ressembler au code suivant (qui utilise la couc
 public class DesktopStarter {
    public static void main(String[] argv) {
       LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
-      new LwjglApplication(new MyGame(), config);
+      new LwjglApplication(new Game(), config);
    }
 }
 ```
@@ -120,7 +180,7 @@ public class AndroidStarter extends AndroidApplication {
    public void onCreate(Bundle bundle) {
       super.onCreate(bundle);
       AndroidApplicationConfiguration config = new AndroidApplicationConfiguration();
-      initialize(new MyGame(), config);
+      initialize(new Game(), config);
    }
 }
 ```
@@ -142,57 +202,394 @@ AudioDevice audioDevice = Gdx.audio.newAudioDevice(44100, false);
 
 `Gdx.audio` est une référence à l'implémentation bas-niveau qui a été instanciée au démarrage de l'application par l'instance de l'interface `Application`. Les autres modules sont accessibles de la même manière (par exemple, `Gdx.app` pour ccéder à l'implémentation du module `Application`, `Gdx.files` pour accéder à l'implémentation du module `Files`, etc...).
 
-## Cycle de vie d'un jeu avec libGDX
-
-Une application libGDX a un cycle de vie bien défini qui gouverne les états d'une application tels que la création, la pause, la reprise, le rendu et la destruction d'une application.
-
-### ApplicationListener
-
-Un développeur d'application exploite ces évènements du cycle de vie en implémentant l'interface `ApplicationListener` et en passant une instance de cette implémentation à l'implémentation concrète de l'interface `Application` d'une plateforme spécifique. De là, l'interface `Application` appellera l'`ApplicationListener` à chaque fois qu'un évènement de niveau application surviendra. Une implémentation basique d'`ApplicationListener` pourrait ressembler au code suivant :
-
-```java
-public class MyGame implements ApplicationListener {
-   public void create () {
-   }
-
-   public void render () {        
-   }
-
-   public void resize (int width, int height) { 
-   }
-
-   public void pause () { 
-   }
-
-   public void resume () {
-   }
-
-   public void dispose () { 
-   }
-}
-```
-
-**Remarque :** Vous pouvez également créer une classe dérivée de la classe `ApplicationAdapter` si toutes les méthodes de l'interface ne sont pas utiles.
-
-Une fois passée à l'`Application`, les méthodes de l'`ApplicationListener` seront appelées comme suit :
-
-- `create()` : Méthode appelée une seule fois lorsque l'application est créée.
-- `resize(int width, int height)` : Méthode appelée chaque fois que l'écran de jeu est redimensionné et que le jeu n'est pas dans un état de pause. Elle est également appelée une fois juste après la méthode `create()`. Les paramètres correspondent à la nouvelle largeur et hauteur de l'écran de jeu redimensionné (en pixels).
-- `render()` : Méthode appelée par la boucle de jeu depuis l'application chaque fois qu'un rendu doit être exécuté. Les mises à jour de la logique de jeu sont généralement exécutées dans cette méthode.
-- `pause()` : Sur Android, cette méthode est appelée lorsque le bouton `Home` est appuyé ou si un appel est reçu. Sur ordinateur, elle est appelée juste avant la méthode `dispose()` lorsque le jeu se termine. Une bon endroit pour sauvegarder l'état du jeu.
-- `resume()` : Cette méthode est seulement appelée sur Android, lorsque l'application reprend après un état de pause.
-- `dispose()` : Méthode appelée lorsque l'application est détruite. Elle est précédée d'un appel à la méthode `pause()`.
-
-Le diagramme suivant illustre visuellement le cycle de vie :
-
-![diagramme du cycle de vie](libgdx_diagramme_cycle_de_vie.png)
-
-### Où est la boucle principale ?
-
-LibGDX est basé sur les évènements par nature. Cela est principalement dû à la façon dont fonctionnent *Android* et *JavaScript*. Une boucle principale explicite n'existe pas. Cependant la méthode `ApplicationListener.render()` peut être considérée comme le corps d'une telle boucle.
-
 ## Liens utiles
 
 La ressource la plus utile pour apprendre libGDX est le [wiki officiel](https://github.com/libgdx/libgdx/wiki).
 
 **Attention !** La [documentation officiel](https://libgdx.badlogicgames.com/documentation/) sur le site de badlogic est atrocement limitée pour apprendre à utiliser libGDX. Elle propose juste d'expliquer quels outils utiliser et comment les configurer pour démarrer. Elle contient également des informations pour exporter un projet sur les plateformes cibles. D'une manière générale, utilisez de préférence le wiki !
+
+L'autre ressource essentielle est l'[API de libGDX](https://libgdx.badlogicgames.com/ci/nightlies/docs/api/).
+
+## Système de coordonnées
+
+L'origine se situe en bas à gauche de l'affichage. Les valeurs sur l'axe Y augmentent lorsqu'on monte. Pareil pour les images.
+
+## Assets
+
+Placez vos assets graphiques et audio dans le dossier `assets` du dossier de projet `android` ou du dossier général `core` ou encore dans le dossier `resources` du dossier de projet `desktop`.
+
+## Créer des écrans de jeux
+
+Créez un package `states` pour stocker les différentes classes utiles aux écrans de jeu.
+
+### La classe `GameStateManager`
+
+Créez une classe `GameStateManager`. Elle contiendra tous les écrans de jeu représentés par des objets d'une classe abstraite `GameState` que vous allez créer par la suite.
+
+```java
+public class GameStateManager {
+
+}
+```
+
+Créez un membre privé `Stack<GameState>` qui contiendra une pile d'écrans de jeu.
+
+```java
+import java.utils.Stack;
+...
+private Stack<GameState> gameStates;
+```
+
+Créez un constructeur pour créer une instance de la pile.
+
+```java
+public GameStateManager() {
+   gameStates = new Stack<GameState>();
+}
+```
+
+Créez une méthode `push` pour ajouter l'objet `gameState` sur la pile.
+
+```java
+public void push(GameState gameState) {
+   gameStates.push(gameState);
+}
+```
+
+Créez une methode `set` pour changer d'écran de jeu. Elle doit retirer et détruire l'écran de jeu stocké sur le dessus de la pile. Elle ajoute ensuite l'objet `gameState` passé en paramètre.
+
+```java
+public void set(GameState gameState) {
+   gameStates.pop().dispose();
+   gameStates.push(gameState);
+}
+```
+
+Créez une méthode `update` pour mettre à jour la logique de l'écran de jeu en cours.
+
+```java
+public void update(float dt) {
+   gameStates.peek().update(dt);
+}
+```
+
+**Remarque :** La méthode `peek` prend l'objet sur la pile et le remet au dessus.
+
+Créez une méthode `render` pour afficher l'écran de jeu en cours.
+
+```java
+public void render(SpriteBatch spriteBatch) {
+   gameStates.peek().render(spriteBatch);
+}
+```
+
+**Remarque :** La méthode `dispose` du `GameState` courant est appelée une seule fois lorsqu'on retire définitivement le `GameState` de la pile.
+
+La classe complète :
+
+```java
+import java.utils.Stack;
+
+public class GameStateManager {
+
+   private Stack<GameState> gameStates;
+
+   public GameStateManager() {
+      gameStates = new Stack<GameState>();
+   }
+
+   public void push(GameState gameState) {
+      gameStates.push(gameState);
+   }
+
+   public void set(GameState gameState) {
+      gameStates.pop().dispose();
+      gameStates.push(gameState);
+   }
+
+   public void update(float dt) {
+      gameStates.peek().update(dt);
+   }
+
+   public void render(SpriteBatch spriteBatch) {
+      gameStates.peek().render(spriteBatch);
+   }
+
+}
+```
+
+### La classe `GameState`
+
+Créez une classe abstraite `GameState`. Tous les écrans de jeux hériteront de cette classe.
+
+```java
+public abstract class GameState {
+
+}
+```
+
+Créez un membre `protected` de type `OrthographicCamera`.
+
+```java
+protected OrthographicCamera orthographicCamera;
+```
+
+Créez un membre `protected` de type `GameStateManager`.
+
+```java
+protected GameStateManager gameStateManager;
+```
+
+Créez un constructeur prenant un `GameStateManager`. Dans le constructeur, affectez le paramètre au membre et instancier le membre `orthographicCamera`.
+
+```java
+protected GameState() {
+   orthographicCamera = new OrthographicCamera();
+   this.gameStateManager = gameStateManager;
+}
+```
+
+Créez une méthode abstraite `handleInput` pour gérer les contrôles. Elle ne prend pas de paramètre et ne renvoie rien.
+
+```java
+protected abstract void handleInput();
+```
+
+Créez une méthode abstraite `update` pour mettre à jour la logique de l'écran de jeu. Elle prend un `float` en paramètre et ne renvoie rien.
+
+```java
+public abstract void update(float dt);
+```
+
+Créez une méthode abstraite `render` pour afficher l'écran de jeu. Elle prend un `SpriteBatch` en paramètre et ne renvoie rien.
+
+```java
+public abstract void render(SpriteBatch spriteBatch);
+```
+
+Créez une méthode abstraite `dispose` pour libérer la mémoire des ressources utilisées par l'écran de jeu. Elle ne prend pas de paramètre et ne renvoie rien.
+
+```java
+public abstract void dispose();
+```
+
+La classe complète :
+
+```java
+public abstract class GameState {
+
+   protected OrthographicCamera orthographicCamera;
+   protected GameStateManager gameStateManager;
+
+   protected GameState() {
+      orthographicCamera = new OrthographicCamera();
+      this.gameStateManager = gameStateManager;
+   }
+
+   protected abstract void handleInput();
+   public abstract void update(float dt);
+   public abstract void render(SpriteBatch spriteBatch);
+   public abstract void dispose();
+
+}
+```
+
+### Tester les classes `GameStateManager` et `GameState`
+
+#### Créer un `GameState` concret
+
+Créez une classe `TestGameState` qui hérite de `GameState`. Définissez un constructeur publique et implémentez les méthodes abstraites de la classe `GameState`.
+
+```java
+public class TestGameState extends GameState {
+
+   public TestGameState(GameStateManager gameStateManager) {
+      super(gameStateManager);
+   }
+
+   @Override
+   protected void handleInput() {
+
+   }
+
+   @Override
+   public void update(float dt) {
+
+   }
+
+   @Override
+   public void render(SpriteBatch spriteBatch) {
+
+   }
+
+   @Override
+   public void dispose() {
+
+   }
+
+}
+```
+
+Créez un membre `Texture`.
+
+```java
+private Texture texture;
+```
+
+Dans le constructeur, instanciez une nouvelle `texture` en chargeant une image stockée dans le dossier `assets`.
+
+```java
+texture = new Texture("image.png");
+```
+
+Dans la méthode `render`, affichez l'image avec la méthode `draw` de l'objet `spriteBatch`. Le premier paramètre est la texture. Le deuxième est la position X. Le troisième est la position Y.
+
+**Attention !** Pensez bien à encadrer cet appel avec les méthodes `begin` et `end` de l'objet `spriteBatch`.
+
+```java
+spriteBatch.begin();
+spriteBatch.draw(texture, 0, 0);
+spriteBatch.end();
+```
+
+Dans la méthode `dispose`, libérez les ressources de la texture.
+
+```java
+texture.dispose();
+```
+
+La classe complète :
+
+```java
+public class TestGameState extends GameState {
+
+   private Texture texture;
+
+   public TestGameState(GameStateManager gameStateManager) {
+      super(gameStateManager);
+      texture = new Texture("image.png");
+   }
+
+   @Override
+   protected void handleInput() {
+
+   }
+
+   @Override
+   public void update(float dt) {
+
+   }
+
+   @Override
+   public void render(SpriteBatch spriteBatch) {
+      spriteBatch.begin();
+      spriteBatch.draw(texture, 0, 0);
+      spriteBatch.end();
+   }
+
+   @Override
+   public void dispose() {
+      texture.dispose();
+   }
+
+}
+```
+
+#### Exécuter le projet
+
+Ouvrez la classe principale héritant d'`ApplicationListener`.
+
+Créez un membre `GameStateManager`.
+
+```java
+private GameStateManager gameStateManager;
+```
+
+Créez un membre `SpriteBatch`.
+
+```java
+private SpriteBatch spriteBatch;
+```
+
+Dans la méthode `create`, instanciez le membre `GameStateManager` et le membre `SpriteBatch`.
+
+```java
+gameStateManager = new GameStateManager();
+spriteBatch = new SpriteBatch();
+```
+
+Toujours dans la méthode `create`, ajoutez au `GameStateManager` un nouveau `GameState`, instance de la classe concrète `TestGameState`.
+
+**Remarque :** Pensez à passer au constructeur l'objet `gameStateManager`.
+
+```java
+gameStateManager.push(new TestGameState(gameStateManager));
+```
+
+Dans la méthode `render`, appelez la méthode `update` de l'objet membre `gameStateManager` et en lui passant le delta time que vous pouvez obtenir par la méthode `Gdx.graphics.getDeltaTime`. Ensuite, appelez la méthode `render` de l'objet `gameStateManager` en passant l'objet membre `spriteBatch`.
+
+```java
+gameStateManager.update(Gdx.graphics.getDeltaTime());
+gameStateManager.render(spriteBatch);
+```
+
+Dans la méthode `dispose`, libérez la mémoire allouée pour l'objet membre `spriteBatch`.
+
+```java
+spriteBatch.dispose();
+```
+
+La classe complète :
+
+```java
+public class Game implements ApplicationListener {
+
+   private GameStateManager gameStateManager;
+   private SpriteBatch spriteBatch;
+
+   @Override
+   public void create () {
+      gameStateManager = new GameStateManager();
+      spriteBatch = new SpriteBatch();
+      gameStateManager.push(new TestGameState(gameStateManager));
+   }
+
+   @Override
+   public void render () {
+      gameStateManager.update(Gdx.graphics.getDeltaTime());
+      gameStateManager.render(spriteBatch);      
+   }
+
+   @Override
+   public void resize (int width, int height) {
+   }
+
+   @Override
+   public void pause () {
+   }
+
+   @Override
+   public void resume () {
+   }
+
+   @Override
+   public void dispose () {
+      spriteBatch.dispose();
+   }
+
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
